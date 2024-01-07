@@ -1,7 +1,6 @@
-package db
+package main
 
 import (
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/tasuku43/go-todo-list/models"
 )
 
