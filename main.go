@@ -4,66 +4,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/tasuku43/go-todo-list/models"
-	"net/http"
-	"time"
+	"github.com/tasuku43/go-todo-list/pkg/presentation/rest/handlers"
 )
 
 func main() {
 	r := gin.Default()
 	dbConn := initDB() // データベース接続の初期化
 	defer dbConn.Close()
+	taskHandler := handlers.NewTaskHandler(dbConn)
 
-	r.POST("/tasks", func(c *gin.Context) {
-		var task models.Task
-		if err := c.BindJSON(&task); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		dbConn.Create(&task)
-		c.JSON(http.StatusCreated, task)
-	})
-
-	r.GET("/tasks", func(c *gin.Context) {
-		var tasks []models.Task
-		dbConn.Find(&tasks)
-		c.JSON(http.StatusOK, tasks)
-	})
-
-	r.GET("/tasks/:id", func(c *gin.Context) {
-		var task models.Task
-		if err := dbConn.First(&task, c.Param("id")).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-			return
-		}
-		c.JSON(http.StatusOK, task)
-	})
-
-	r.PUT("/tasks/:id", func(c *gin.Context) {
-		var task models.Task
-		if err := dbConn.First(&task, c.Param("id")).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-			return
-		}
-
-		if err := c.BindJSON(&task); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		task.UpdatedAt = time.Now()
-		dbConn.Save(&task)
-		c.JSON(http.StatusOK, task)
-	})
-
-	r.DELETE("/tasks/:id", func(c *gin.Context) {
-		var task models.Task
-		if err := dbConn.First(&task, c.Param("id")).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-			return
-		}
-		dbConn.Delete(&task)
-		c.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
-	})
+	r.POST("/tasks", taskHandler.CreateTask)
+	r.GET("/tasks", taskHandler.GetTasks)
+	r.GET("/tasks/:id", taskHandler.GetTask)
+	r.PUT("/tasks/:id", taskHandler.UpdateTask)
+	r.DELETE("/tasks/:id", taskHandler.DeleteTask)
 
 	r.Run(":8080")
 }
